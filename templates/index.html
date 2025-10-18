@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Invasive Plants Tracking - Montgomery County, Maryland</title>
+
+
+   <!-- Leaflet CSS -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+
+   <style>
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
+
+
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           min-height: 100vh;
+           padding: 10px;
+           overflow-y: auto;
+       }
+
+
+       .main-container {
+           max-width: 1800px;
+           margin: 0 auto;
+           background: white;
+           border-radius: 15px;
+           box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+           overflow: hidden;
+       }
+
+
+       header {
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           color: white;
+           padding: 8px 40px;
+           text-align: center;
+           flex-shrink: 0;
+       }
+
+
+       header h1 {
+           font-size: 1.3em;
+           margin-bottom: 2px;
+           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+       }
+
+
+       header p {
+           font-size: 0.75em;
+           opacity: 0.95;
+       }
+
+
+       .stats-container {
+           background: white;
+           padding: 6px 30px;
+           border-bottom: 2px solid #e9ecef;
+           flex-shrink: 0;
+       }
+
+
+       .total-stat-card {
+           text-align: center;
+           padding: 5px;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           border-radius: 8px;
+           margin-bottom: 6px;
+           box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+           cursor: pointer;
+           transition: all 0.3s;
+       }
+
+
+       .total-stat-card:hover {
+           box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+           transform: translateY(-2px);
+       }
+
+
+       .total-stat-card.active {
+           box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+           transform: scale(1.02);
+       }
+
+
+       .total-stat-card .stat-value {
+           font-size: 1.4em;
+           font-weight: bold;
+           color: white;
+       }
+
+
+       .total-stat-card .stat-label {
+           color: white;
+           margin-top: 2px;
+           font-size: 0.65em;
+           text-transform: uppercase;
+           letter-spacing: 1px;
+           opacity: 0.95;
+       }
+
+
+       .species-stats-bar {
+           display: grid;
+           grid-template-columns: repeat(12, 1fr);
+           gap: 4px;
+       }
+
+
+       @media (max-width: 1400px) {
+           .species-stats-bar {
+               grid-template-columns: repeat(6, 1fr);
+           }
+       }
+
+
+       @media (max-width: 768px) {
+           .species-stats-bar {
+               grid-template-columns: repeat(3, 1fr);
+           }
+       }
+
+
+       .stat-card {
+           text-align: center;
+           padding: 6px 4px;
+           background: white;
+           border-radius: 6px;
+           border: 2px solid #e9ecef;
+           transition: all 0.3s;
+           cursor: pointer;
+           min-width: 0;
+       }
+
+
+       .stat-card:hover {
+           border-color: #667eea;
+           box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+           transform: translateY(-3px);
+           background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+       }
+
+
+       .stat-card.active {
+           border-color: #667eea;
+           background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+           box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+           transform: scale(1.05);
+       }
+
+
+       .stat-card .stat-value {
+           font-size: 1.3em;
+           font-weight: bold;
+           background: linear-gradient(135deg, #667eea, #764ba2);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           background-clip: text;
+       }
+
+
+       .stat-card .stat-label {
+           color: #6c757d;
+           margin-top: 3px;
+           font-size: 0.6em;
+           text-transform: uppercase;
+           letter-spacing: 0.3px;
+           min-height: 22px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           line-height: 1.1;
+           word-break: break-word;
+           padding: 0 2px;
+       }
+
+
+       .content-area {
+           display: grid;
+           grid-template-columns: 2fr 1fr;
+           gap: 12px;
+           padding: 12px;
+           background: #f8f9fa;
+       }
+
+
+       .map-section {
+           display: contents;
+       }
+
+
+       .table-section {
+           grid-column: 1 / -1;
+       }
+
+
+       @media (max-width: 1400px) {
+           .content-area {
+               grid-template-columns: 1fr;
+           }
+       }
+
+
+       .panel {
+           background: white;
+           border-radius: 12px;
+           box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+           overflow: hidden;
+       }
+
+
+       .panel-header {
+           background: linear-gradient(to right, #f8f9fa, white);
+           padding: 15px 20px;
+           border-bottom: 2px solid #e9ecef;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+
+
+       .panel-title {
+           font-size: 1.2em;
+           color: #2c3e50;
+           font-weight: 600;
+           display: flex;
+           align-items: center;
+           gap: 10px;
+       }
+
+
+       #map {
+           height: 500px;
+           position: relative;
+       }
+
+
+       .map-legend {
+           position: absolute;
+           bottom: 20px;
+           right: 20px;
+           background: white;
+           padding: 15px;
+           border-radius: 10px;
+           box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+           z-index: 1000;
+           max-height: 400px;
+           overflow-y: auto;
+       }
+
+
+       .legend-title {
+           font-weight: bold;
+           margin-bottom: 10px;
+           color: #2c3e50;
+           font-size: 0.95em;
+       }
+
+
+       .legend-item {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           margin: 6px 0;
+           font-size: 0.85em;
+       }
+
+
+       .legend-color {
+           width: 16px;
+           height: 16px;
+           border-radius: 50%;
+           border: 2px solid white;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+           flex-shrink: 0;
+       }
+
+
+       .info-panel {
+           background: white;
+           border-radius: 12px;
+           box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+           overflow: hidden;
+           height: 600px;
+           display: flex;
+           flex-direction: column;
+       }
+
+
+       .info-panel-content {
+           flex: 1;
+           overflow: hidden;
+           padding: 15px;
+           display: flex;
+           flex-direction: column;
+           height: 100%;
+       }
+
+
+       .info-placeholder {
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           height: 100%;
+           color: #6c757d;
+           text-align: center;
+           padding: 40px;
+       }
+
+
+       .info-top-section {
+           flex-shrink: 0;
+           margin-bottom: 15px;
+       }
+
+
+       .info-image {
+           width: 100%;
+           height: 185px;
+           max-height: 185px;
+           object-fit: contain;
+           border-radius: 8px;
+           margin-bottom: 12px;
+           background: #f8f9fa;
+       }
+
+
+       .info-title {
+           font-size: 1.2em;
+           font-weight: bold;
+           color: #667eea;
+           margin-bottom: 10px;
+       }
+
+
+       .info-rows {
+           flex: 0 0 auto;
+           display: flex;
+           flex-direction: column;
+           justify-content: space-between;
+           margin-bottom: 10px;
+       }
+
+
+       .info-row {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           padding: 8px 0;
+           border-bottom: 1px solid #f0f0f0;
+       }
+
+
+       .info-label {
+           font-weight: 600;
+           color: #495057;
+           font-size: 0.85em;
+           flex-shrink: 0;
+           width: 110px;
+       }
+
+
+       .info-value {
+           color: #2c3e50;
+           text-align: right;
+           flex: 1;
+           font-size: 0.85em;
+           word-break: break-word;
+       }
+
+
+       .info-bottom-section {
+           flex-shrink: 0;
+           padding-top: 10px;
+       }
+
+
+       .info-link {
+           text-align: center;
+           padding: 15px 0;
+           border-top: 2px solid #e9ecef;
+       }
+
+
+       .info-link a {
+           color: #667eea;
+           text-decoration: none;
+           font-weight: 500;
+           display: inline-flex;
+           align-items: center;
+           gap: 5px;
+           font-size: 0.9em;
+       }
+
+
+       .info-link a:hover {
+           text-decoration: underline;
+       }
+
+
+       .table-wrapper {
+           max-height: 600px;
+           overflow: auto;
+       }
+
+
+       table {
+           width: 100%;
+           border-collapse: separate;
+           border-spacing: 0;
+           table-layout: fixed;
+       }
+
+
+       thead {
+           position: sticky;
+           top: 0;
+           z-index: 100;
+       }
+
+
+       th {
+           background: linear-gradient(135deg, #667eea, #764ba2);
+           color: white;
+           padding: 15px;
+           text-align: left;
+           font-weight: 600;
+           font-size: 0.95em;
+           letter-spacing: 0.5px;
+       }
+
+
+       td {
+           padding: 12px 15px;
+           border-bottom: 1px solid #e9ecef;
+           vertical-align: middle;
+           overflow: hidden;
+           text-overflow: ellipsis;
+       }
+
+
+       .img-cell {
+           text-align: center;
+       }
+
+
+       tbody tr {
+           transition: all 0.3s;
+       }
+
+
+       tbody tr:hover {
+           background: linear-gradient(to right, #f8f9fa, #ffffff);
+           transform: translateX(3px);
+       }
+
+
+       .img-cell {
+           width: 100px;
+       }
+
+
+       .obs-image {
+           width: 80px;
+           height: 80px;
+           object-fit: cover;
+           border-radius: 10px;
+           cursor: pointer;
+           transition: transform 0.3s;
+           box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+       }
+
+
+       .obs-image:hover {
+           transform: scale(3);
+           z-index: 1000;
+           position: relative;
+           box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+       }
+
+
+       .no-image {
+           width: 80px;
+           height: 80px;
+           background: linear-gradient(135deg, #e9ecef, #dee2e6);
+           border-radius: 10px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           color: #6c757d;
+           font-size: 0.75em;
+           text-align: center;
+       }
+
+
+       .loading {
+           text-align: center;
+           padding: 60px;
+       }
+
+
+       .spinner {
+           display: inline-block;
+           width: 60px;
+           height: 60px;
+           border: 6px solid #f3f3f3;
+           border-top: 6px solid #667eea;
+           border-radius: 50%;
+           animation: spin 1s linear infinite;
+       }
+
+
+       @keyframes spin {
+           0% { transform: rotate(0deg); }
+           100% { transform: rotate(360deg); }
+       }
+
+
+       .btn {
+           background: linear-gradient(135deg, #667eea, #764ba2);
+           color: white;
+           border: none;
+           padding: 12px 25px;
+           border-radius: 10px;
+           cursor: pointer;
+           font-size: 1em;
+           font-weight: 500;
+           transition: all 0.3s;
+           display: inline-flex;
+           align-items: center;
+           gap: 8px;
+       }
+
+
+       .btn:hover:not(:disabled) {
+           transform: translateY(-2px);
+           box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+       }
+
+
+       .btn:disabled {
+           opacity: 0.6;
+           cursor: not-allowed;
+       }
+
+
+       .btn.secondary {
+           background: linear-gradient(135deg, #6c757d, #495057);
+       }
+
+
+       .popup-wrapper {
+           max-width: 320px;
+       }
+
+
+       .popup-image {
+           width: 100%;
+           height: 200px;
+           object-fit: cover;
+           border-radius: 10px;
+           margin-bottom: 15px;
+           box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+       }
+
+
+       .popup-title {
+           font-size: 1.2em;
+           font-weight: bold;
+           color: #667eea;
+           margin-bottom: 12px;
+       }
+
+
+       .popup-row {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           margin: 8px 0;
+           padding: 5px 0;
+           border-bottom: 1px solid #f0f0f0;
+       }
+
+
+       .popup-label {
+           font-weight: 600;
+           color: #495057;
+           font-size: 0.9em;
+       }
+
+
+       .popup-value {
+           color: #2c3e50;
+           text-align: right;
+           max-width: 60%;
+           font-size: 0.9em;
+       }
+
+
+       .popup-link {
+           margin-top: 15px;
+           text-align: center;
+           padding-top: 15px;
+           border-top: 2px solid #e9ecef;
+       }
+
+
+       .popup-link a {
+           color: #667eea;
+           text-decoration: none;
+           font-weight: 500;
+           display: inline-flex;
+           align-items: center;
+           gap: 5px;
+       }
+
+
+       .popup-link a:hover {
+           text-decoration: underline;
+       }
+
+
+       .notification {
+           position: fixed;
+           top: 30px;
+           right: 30px;
+           padding: 16px 24px;
+           border-radius: 12px;
+           color: white;
+           font-weight: 500;
+           z-index: 10000;
+           animation: slideIn 0.4s;
+           box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+       }
+
+
+       @keyframes slideIn {
+           from {
+               transform: translateX(400px);
+               opacity: 0;
+           }
+           to {
+               transform: translateX(0);
+               opacity: 1;
+           }
+       }
+
+
+       .notification.success {
+           background: linear-gradient(135deg, #28a745, #20c997);
+       }
+
+
+       .notification.error {
+           background: linear-gradient(135deg, #dc3545, #c82333);
+       }
+
+
+       .notification.info {
+           background: linear-gradient(135deg, #17a2b8, #138496);
+       }
+
+
+       .id-badge {
+           background: linear-gradient(135deg, #e9ecef, #dee2e6);
+           padding: 4px 10px;
+           border-radius: 6px;
+           font-family: 'Courier New', monospace;
+           font-size: 0.9em;
+           font-weight: 600;
+       }
+
+
+       .quality-badge {
+           padding: 5px 12px;
+           border-radius: 20px;
+           font-size: 0.85em;
+           font-weight: 600;
+           text-transform: capitalize;
+       }
+
+
+       .quality-badge.research {
+           background: linear-gradient(135deg, #d4edda, #c3e6cb);
+           color: #155724;
+       }
+
+
+       .quality-badge.needs_id {
+           background: linear-gradient(135deg, #fff3cd, #ffeeba);
+           color: #856404;
+       }
+
+
+       .quality-badge.casual,
+       .quality-badge.unknown {
+           background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+           color: #721c24;
+       }
+   </style>
+</head>
+<body>
+   <div class="main-container">
+       <header>
+           <h1>Invasive Plants Observation Tracking</h1>
+           <p>12 Target Species - Montgomery County, Maryland</p>
+       </header>
+
+
+       <div class="stats-container">
+           <div class="total-stat-card">
+               <div class="stat-value" id="totalCount">0</div>
+               <div class="stat-label">Total Observations</div>
+           </div>
+           <div class="species-stats-bar" id="statsBar"></div>
+       </div>
+
+
+       <div class="content-area">
+           <div class="panel">
+               <div class="panel-header">
+                   <div class="panel-title">
+                       <span>Invasive Plants Distribution</span>
+                   </div>
+                   <button class="btn" onclick="refreshData()" id="refreshBtn">
+                       <span>Refresh Data</span>
+                   </button>
+               </div>
+               <div id="map">
+                   <div class="map-legend">
+                       <div class="legend-title">Invasive Species</div>
+                       <div id="legendContent"></div>
+                   </div>
+               </div>
+           </div>
+
+
+           <div class="info-panel">
+               <div class="panel-header">
+                   <div class="panel-title">
+                       <span>Plant Details</span>
+                   </div>
+               </div>
+               <div class="info-panel-content" id="infoPanel">
+                   <div class="info-placeholder">
+                       Click on a marker on the map or an image in the table to view plant details
+                   </div>
+               </div>
+           </div>
+
+
+           <div class="panel table-section">
+               <div class="table-wrapper">
+                   <table>
+                       <thead>
+                           <tr>
+                               <th style="width: 13%;">iNaturalist ID</th>
+                               <th style="width: 12%;">Image</th>
+                               <th style="width: 18%;">Common Name</th>
+                               <th style="width: 20%;">Scientific Name</th>
+                               <th style="width: 13%;">Observed Date</th>
+                               <th style="width: 24%;">Location</th>
+                           </tr>
+                       </thead>
+                       <tbody id="tableBody">
+                           <tr>
+                               <td colspan="6">
+                                   <div class="loading">
+                                       <div class="spinner"></div>
+                                       <p>Fetching data from iNaturalist API...</p>
+                                   </div>
+                               </td>
+                           </tr>
+                       </tbody>
+                   </table>
+               </div>
+           </div>
+       </div>
+   </div>
+
+
+   <!-- Leaflet JavaScript -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+
+   <script>
+       // Global variables
+       let map;
+       let markers = [];
+       let observations = [];
+       let speciesInfo = {};
+       let speciesColorMap = {};  // Store color for each taxon_id
+
+
+       // Generate distinct colors for up to 12 species
+       const colorPalette = [
+           '#ff6b6b', '#4ecdc4', '#ffd93d', '#95e77e', '#a29bfe',
+           '#fd79a8', '#fdcb6e', '#74b9ff', '#fab1a0', '#55efc4',
+           '#e17055', '#6c5ce7'
+       ];
+
+
+       // Get color for species by taxon_id (consistent mapping)
+       function getSpeciesColor(taxonId) {
+           if (!speciesColorMap[taxonId]) {
+               // Assign colors in the order taxon_ids appear in speciesInfo
+               const taxonIds = Object.keys(speciesInfo).map(id => parseInt(id));
+               const sortedTaxonIds = taxonIds.sort((a, b) => a - b);
+               const index = sortedTaxonIds.indexOf(parseInt(taxonId));
+               speciesColorMap[taxonId] = index >= 0 && index < colorPalette.length ? colorPalette[index] : '#999999';
+           }
+           return speciesColorMap[taxonId];
+       }
+
+
+       // Initialize the map
+       function initializeMap() {
+           map = L.map('map').setView([39.1547, -77.2405], 10);
+
+
+           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+               attribution: '© OpenStreetMap contributors',
+               maxZoom: 18
+           }).addTo(map);
+
+
+           const montgomeryBounds = [
+               [39.3542, -77.5397],
+               [39.3542, -76.8897],
+               [38.9842, -76.8897],
+               [38.9842, -77.5397],
+               [39.3542, -77.5397]
+           ];
+
+
+           L.polygon(montgomeryBounds, {
+               color: '#667eea',
+               weight: 3,
+               fillOpacity: 0.1,
+               fillColor: '#667eea',
+               dashArray: '10, 5'
+           }).addTo(map);
+       }
+
+
+       // Update legend with species info
+       function updateLegend() {
+           const legendContent = document.getElementById('legendContent');
+           let html = '';
+
+
+           for (const [taxonId, name] of Object.entries(speciesInfo)) {
+               const color = getSpeciesColor(parseInt(taxonId));
+               html += '<div class="legend-item">';
+               html += '<div class="legend-color" style="background: ' + color + ';"></div>';
+               html += '<span>' + name + '</span>';
+               html += '</div>';
+           }
+
+
+           legendContent.innerHTML = html;
+       }
+
+
+       // Global variable for current filter
+       let currentFilterTaxonId = null;
+
+
+       // Filter markers by taxon ID
+       function filterMarkersByTaxon(taxonId) {
+           currentFilterTaxonId = taxonId;
+           const color = getSpeciesColor(taxonId);
+
+
+           markers.forEach(function(marker) {
+               const markerTaxonId = marker.options.taxonId;
+               if (taxonId === null || markerTaxonId === taxonId) {
+                   marker.setOpacity(1);
+                   marker.setZIndexOffset(0);
+                   // Reset to normal icon
+                   const normalIcon = L.divIcon({
+                       className: 'custom-marker',
+                       html: '<div style="background: ' + color + '; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);"></div>',
+                       iconSize: [16, 16],
+                       iconAnchor: [8, 8]
+                   });
+                   marker.setIcon(normalIcon);
+                   marker.options.interactive = true;
+               } else {
+                   marker.setOpacity(0.05);
+                   marker.setZIndexOffset(0);
+                   marker.options.interactive = true;
+               }
+           });
+
+
+           // Filter table by taxon ID
+           populateFilteredTable(taxonId);
+
+
+           // Update active state on cards
+           updateActiveCards(taxonId);
+       }
+
+
+       // Reset all markers to full opacity
+       function resetMarkerOpacity() {
+           currentFilterTaxonId = null;
+           markers.forEach(function(marker) {
+               const markerTaxonId = marker.options.taxonId;
+               const color = getSpeciesColor(markerTaxonId);
+
+
+               marker.setOpacity(1);
+               marker.setZIndexOffset(0);
+               marker.options.interactive = true;
+
+
+               // Reset to normal icon
+               const normalIcon = L.divIcon({
+                   className: 'custom-marker',
+                   html: '<div style="background: ' + color + '; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);"></div>',
+                   iconSize: [16, 16],
+                   iconAnchor: [8, 8]
+               });
+               marker.setIcon(normalIcon);
+           });
+
+
+           // Reset table to show all data
+           populateTable();
+
+
+           // Update active state on cards
+           updateActiveCards(null);
+       }
+
+
+       // Update active state on stat cards
+       function updateActiveCards(activeTaxonId) {
+           // Update total card
+           const totalCard = document.querySelector('.total-stat-card');
+           if (totalCard) {
+               if (activeTaxonId === null) {
+                   totalCard.classList.add('active');
+               } else {
+                   totalCard.classList.remove('active');
+               }
+           }
+
+
+           // Update species cards
+           const statCards = document.querySelectorAll('.stat-card');
+           statCards.forEach(function(card) {
+               const cardTaxonId = parseInt(card.getAttribute('data-taxon-id'));
+               if (activeTaxonId !== null && cardTaxonId === activeTaxonId) {
+                   card.classList.add('active');
+               } else {
+                   card.classList.remove('active');
+               }
+           });
+       }
+
+
+       // Function to convert to sentence case (first letter capitalized, rest lowercase)
+       function toSentenceCase(text) {
+           if (!text) return text;
+           return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+       }
+
+
+       // Update statistics bar dynamically
+       function updateStatsBar() {
+           const statsBar = document.getElementById('statsBar');
+
+
+           // Add card for each species
+           let html = '';
+           let index = 1;
+           for (const [taxonId, name] of Object.entries(speciesInfo)) {
+               const taxonIdNum = parseInt(taxonId);
+               let displayName = toSentenceCase(name);
+
+
+               // Add alternative names in parentheses for specific taxon IDs
+               if (taxonIdNum === 55882) {
+                   displayName += ' (English Ivy)';
+               } else if (taxonIdNum === 82342) {
+                   displayName += ' (Bush Honeysuckle)';
+               } else if (taxonIdNum === 130893) {
+                   displayName += ' (Wintercreeper)';
+               }
+
+
+               html += '<div class="stat-card" data-taxon-id="' + taxonId + '">';
+               html += '<div class="stat-value" id="species' + index + 'Count">0</div>';
+               html += '<div class="stat-label" id="species' + index + 'Label">' + displayName + '</div>';
+               html += '</div>';
+               index++;
+           }
+
+
+           statsBar.innerHTML = html;
+
+
+           // Add click event listeners to stat cards
+           const statCards = statsBar.querySelectorAll('.stat-card');
+           statCards.forEach(function(card) {
+               card.addEventListener('click', function() {
+                   const taxonId = parseInt(this.getAttribute('data-taxon-id'));
+                   filterMarkersByTaxon(taxonId);
+               });
+           });
+
+
+           // Add click event listener to total card
+           const totalCard = document.querySelector('.total-stat-card');
+           if (totalCard) {
+               totalCard.addEventListener('click', function() {
+                   resetMarkerOpacity();
+               });
+           }
+       }
+
+
+       // Clear all markers from the map
+       function clearMarkers() {
+           markers.forEach(function(marker) {
+               map.removeLayer(marker);
+           });
+           markers = [];
+       }
+
+
+       // Add a marker for an observation
+       function addMarker(obs) {
+           if (!obs.latitude || !obs.longitude) return;
+
+
+           const taxonId = parseInt(obs.taxon_id);
+           const color = getSpeciesColor(taxonId);
+
+
+           const customIcon = L.divIcon({
+               className: 'custom-marker',
+               html: '<div style="background: ' + color + '; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);"></div>',
+               iconSize: [16, 16],
+               iconAnchor: [8, 8]
+           });
+
+
+           const marker = L.marker([obs.latitude, obs.longitude], {
+               icon: customIcon,
+               taxonId: taxonId,
+               obsId: obs.id  // Store observation ID for filtering
+           });
+
+
+           // Add click event to show details in info panel
+           marker.on('click', function() {
+               showObservationDetails(obs);
+           });
+
+
+           marker.addTo(map);
+           markers.push(marker);
+       }
+
+
+       // Show observation details in the info panel
+       function showObservationDetails(obs) {
+           const infoPanel = document.getElementById('infoPanel');
+
+
+           let html = '<div class="info-top-section">';
+
+
+           if (obs.image_url) {
+               html += '<img src="' + obs.image_url + '" class="info-image" alt="' + obs.common_name + '" onerror="this.outerHTML=\'<div class=\\\'info-image\\\' style=\\\'display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 1em;\\\'>No Image</div>\'">';
+           } else {
+               html += '<div class="info-image" style="display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 1em;">No Image</div>';
+           }
+
+
+           html += '<div class="info-title">' + obs.common_name + '</div>';
+           html += '<div class="info-rows">';
+           html += '<div class="info-row"><span class="info-label">iNaturalist ID:</span><span class="info-value">' + obs.id + '</span></div>';
+           html += '<div class="info-row"><span class="info-label">Scientific Name:</span><span class="info-value"><em>' + obs.scientific_name + '</em></span></div>';
+           html += '<div class="info-row"><span class="info-label">Observed Date:</span><span class="info-value">' + (obs.observed_on || 'Unknown') + '</span></div>';
+           html += '<div class="info-row"><span class="info-label">Location:</span><span class="info-value">' + (obs.place_guess || 'Unknown') + '</span></div>';
+           html += '<div class="info-row"><span class="info-label">Coordinates:</span><span class="info-value">' + (obs.latitude ? obs.latitude.toFixed(4) : 'N/A') + ', ' + (obs.longitude ? obs.longitude.toFixed(4) : 'N/A') + '</span></div>';
+           html += '</div>';
+           html += '</div>';
+
+
+           html += '<div class="info-bottom-section">';
+           html += '<div class="info-link"><a href="' + obs.url + '" target="_blank">View on iNaturalist →</a></div>';
+           html += '</div>';
+
+
+           infoPanel.innerHTML = html;
+       }
+
+
+       // Update statistics
+       function updateStatistics(stats) {
+           document.getElementById('totalCount').textContent = observations.length;
+
+
+           let index = 1;
+           for (const [taxonId, name] of Object.entries(speciesInfo)) {
+               const count = stats.by_species ? (stats.by_species[name] || 0) : 0;
+               const countEl = document.getElementById('species' + index + 'Count');
+               if (countEl) {
+                   countEl.textContent = count;
+               }
+               index++;
+           }
+       }
+
+
+       // Get quality grade CSS class
+       function getQualityClass(grade) {
+           if (!grade) return 'unknown';
+           const g = grade.toLowerCase();
+           if (g === 'research') return 'research';
+           if (g === 'needs_id') return 'needs_id';
+           return 'casual';
+       }
+
+
+       // Populate the data table with filtered data
+       function populateFilteredTable(filterTaxonId) {
+           const tbody = document.getElementById('tableBody');
+
+
+           // Filter observations by taxon ID
+           const filteredObs = observations.filter(function(obs) {
+               return parseInt(obs.taxon_id) === filterTaxonId;
+           });
+
+
+           if (filteredObs.length === 0) {
+               tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">No observations found for this species</td></tr>';
+               return;
+           }
+
+
+           filteredObs.sort(function(a, b) {
+               const dateA = new Date(a.observed_on || '1900-01-01');
+               const dateB = new Date(b.observed_on || '1900-01-01');
+               return dateB - dateA;
+           });
+
+
+           let tableHTML = '';
+           filteredObs.forEach(function(obs) {
+               const taxonId = parseInt(obs.taxon_id);
+               const color = getSpeciesColor(taxonId);
+
+
+               tableHTML += '<tr>';
+               tableHTML += '<td><span class="id-badge">' + obs.id + '</span></td>';
+
+
+               tableHTML += '<td class="img-cell">';
+               if (obs.image_url) {
+                   tableHTML += '<img src="' + obs.image_url + '" class="obs-image" alt="' + obs.common_name + '" ';
+                   tableHTML += 'data-obs-id="' + obs.id + '" ';
+                   tableHTML += 'style="cursor: pointer; display: block; margin: 0 auto;" ';
+                   tableHTML += 'onerror="this.outerHTML=\'<div class=\\\'no-image\\\' data-obs-id=\\\'+ obs.id + \\\' style=\\\'margin: 0 auto; cursor: pointer;\\\'>No Image</div>\'">';
+               } else {
+                   tableHTML += '<div class="no-image" data-obs-id="' + obs.id + '" style="margin: 0 auto; cursor: pointer;">No Image</div>';
+               }
+               tableHTML += '</td>';
+
+
+               tableHTML += '<td>';
+               tableHTML += '<div style="display: flex; align-items: center; gap: 8px;">';
+               tableHTML += '<div style="width: 12px; height: 12px; background: ' + color + '; border-radius: 50%; border: 2px solid #333;"></div>';
+               tableHTML += '<strong>' + obs.common_name + '</strong>';
+               tableHTML += '</div>';
+               tableHTML += '</td>';
+
+
+               tableHTML += '<td><em>' + obs.scientific_name + '</em></td>';
+               tableHTML += '<td>' + (obs.observed_on || 'Unknown') + '</td>';
+               tableHTML += '<td>' + (obs.place_guess || 'Unknown location') + '</td>';
+               tableHTML += '</tr>';
+           });
+
+
+           tbody.innerHTML = tableHTML;
+
+
+           // Add click event listeners to images
+           const images = tbody.querySelectorAll('.obs-image');
+           images.forEach(function(img) {
+               img.addEventListener('click', function() {
+                   const obsId = parseInt(this.getAttribute('data-obs-id'));
+                   const obs = observations.find(o => o.id === obsId);
+                   if (obs) {
+                       showObservationFromTable(obs);
+                   }
+               });
+           });
+
+
+           // Add click event listeners to "No Image" divs
+           const noImages = tbody.querySelectorAll('.no-image');
+           noImages.forEach(function(div) {
+               div.addEventListener('click', function() {
+                   const obsId = parseInt(this.getAttribute('data-obs-id'));
+                   const obs = observations.find(o => o.id === obsId);
+                   if (obs) {
+                       showObservationFromTable(obs);
+                   }
+               });
+           });
+       }
+
+
+       // Populate the data table
+       function populateTable() {
+           const tbody = document.getElementById('tableBody');
+
+
+           if (observations.length === 0) {
+               tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">No observations found matching all filter criteria</td></tr>';
+               return;
+           }
+
+
+           observations.sort(function(a, b) {
+               const dateA = new Date(a.observed_on || '1900-01-01');
+               const dateB = new Date(b.observed_on || '1900-01-01');
+               return dateB - dateA;
+           });
+
+
+           let tableHTML = '';
+           observations.forEach(function(obs) {
+               const taxonId = parseInt(obs.taxon_id);
+               const color = getSpeciesColor(taxonId);
+
+
+               tableHTML += '<tr>';
+               tableHTML += '<td><span class="id-badge">' + obs.id + '</span></td>';
+
+
+               tableHTML += '<td class="img-cell">';
+               if (obs.image_url) {
+                   tableHTML += '<img src="' + obs.image_url + '" class="obs-image" alt="' + obs.common_name + '" ';
+                   tableHTML += 'data-obs-id="' + obs.id + '" ';
+                   tableHTML += 'style="cursor: pointer; display: block; margin: 0 auto;" ';
+                   tableHTML += 'onerror="this.outerHTML=\'<div class=\\\'no-image\\\' data-obs-id=\\\'+ obs.id + \\\' style=\\\'margin: 0 auto; cursor: pointer;\\\'>No Image</div>\'">';
+               } else {
+                   tableHTML += '<div class="no-image" data-obs-id="' + obs.id + '" style="margin: 0 auto; cursor: pointer;">No Image</div>';
+               }
+               tableHTML += '</td>';
+
+
+               tableHTML += '<td>';
+               tableHTML += '<div style="display: flex; align-items: center; gap: 8px;">';
+               tableHTML += '<div style="width: 12px; height: 12px; background: ' + color + '; border-radius: 50%; border: 2px solid #333;"></div>';
+               tableHTML += '<strong>' + obs.common_name + '</strong>';
+               tableHTML += '</div>';
+               tableHTML += '</td>';
+
+
+               tableHTML += '<td><em>' + obs.scientific_name + '</em></td>';
+               tableHTML += '<td>' + (obs.observed_on || 'Unknown') + '</td>';
+               tableHTML += '<td>' + (obs.place_guess || 'Unknown location') + '</td>';
+               tableHTML += '</tr>';
+           });
+
+
+           tbody.innerHTML = tableHTML;
+
+
+           // Add click event listeners to images
+           const images = tbody.querySelectorAll('.obs-image');
+           images.forEach(function(img) {
+               img.addEventListener('click', function() {
+                   const obsId = parseInt(this.getAttribute('data-obs-id'));
+                   const obs = observations.find(o => o.id === obsId);
+                   if (obs) {
+                       showObservationFromTable(obs);
+                   }
+               });
+           });
+
+
+           // Add click event listeners to "No Image" divs
+           const noImages = tbody.querySelectorAll('.no-image');
+           noImages.forEach(function(div) {
+               div.addEventListener('click', function() {
+                   const obsId = parseInt(this.getAttribute('data-obs-id'));
+                   const obs = observations.find(o => o.id === obsId);
+                   if (obs) {
+                       showObservationFromTable(obs);
+                   }
+               });
+           });
+       }
+
+
+       // Show observation when clicked from table
+       function showObservationFromTable(obs) {
+           // Show details in info panel
+           showObservationDetails(obs);
+
+
+           // Highlight only this observation on map
+           const taxonId = parseInt(obs.taxon_id);
+           const color = getSpeciesColor(taxonId);
+
+
+           markers.forEach(function(marker) {
+               const markerTaxonId = marker.options.taxonId;
+               const markerObsId = marker.options.obsId;
+
+
+               if (markerObsId === obs.id) {
+                   // Highlight selected marker
+                   marker.setOpacity(1);
+                   marker.setZIndexOffset(1000);
+
+
+                   // Replace with larger, pulsing icon
+                   const highlightIcon = L.divIcon({
+                       className: 'custom-marker marker-highlight',
+                       html: '<div style="background: ' + color + '; width: 24px; height: 24px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 5px 15px rgba(0,0,0,0.4);"></div>',
+                       iconSize: [24, 24],
+                       iconAnchor: [12, 12]
+                   });
+                   marker.setIcon(highlightIcon);
+               } else {
+                   // Dim other markers
+                   marker.setOpacity(0.05);
+                   marker.setZIndexOffset(0);
+               }
+           });
+
+
+           // Center map on the selected marker
+           if (obs.latitude && obs.longitude) {
+               map.setView([obs.latitude, obs.longitude], 15);
+           }
+
+
+           // Update active state
+           updateActiveCards(null);
+       }
+
+
+       // Show notification
+       function showNotification(message, type) {
+           const notification = document.createElement('div');
+           notification.className = 'notification ' + type;
+           notification.textContent = message;
+           document.body.appendChild(notification);
+
+
+           setTimeout(function() {
+               notification.style.animation = 'slideIn 0.4s reverse';
+               setTimeout(function() {
+                   notification.remove();
+               }, 400);
+           }, 3000);
+       }
+
+
+       // Refresh data from API
+       async function refreshData() {
+           const btn = document.getElementById('refreshBtn');
+           btn.disabled = true;
+           btn.innerHTML = '<span>⏳</span><span>Loading...</span>';
+
+
+           try {
+               const response = await fetch('/api/observations');
+               const data = await response.json();
+
+
+               if (!data.success) {
+                   throw new Error(data.error || 'Failed to fetch data');
+               }
+
+
+               observations = data.data || [];
+               speciesInfo = data.species_info || {};
+
+
+               updateStatsBar();
+               updateLegend();
+
+
+               clearMarkers();
+
+
+               observations.forEach(function(obs) {
+                   addMarker(obs);
+               });
+
+
+               if (markers.length > 0) {
+                   const group = new L.featureGroup(markers);
+                   map.fitBounds(group.getBounds().pad(0.1));
+               }
+
+
+               updateStatistics(data.stats || {});
+               populateTable();
+
+
+               showNotification('Successfully loaded ' + observations.length + ' observations', 'success');
+
+
+           } catch (error) {
+               console.error('Error:', error);
+               showNotification('Error: ' + error.message, 'error');
+
+
+               document.getElementById('tableBody').innerHTML =
+                   '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #dc3545;">Error: ' +
+                   error.message + '</td></tr>';
+           } finally {
+               btn.disabled = false;
+               btn.innerHTML = '<span>Refresh Data</span>';
+           }
+       }
+
+
+       // Initialize when DOM is loaded
+       document.addEventListener('DOMContentLoaded', function() {
+           console.log('Initializing Invasive Plants Tracking System...');
+           initializeMap();
+           refreshData();
+       });
+   </script>
+</body>
+</html>
+
